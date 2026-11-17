@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">Painel de Monitoramento</h2>
+        <p class="text-muted mb-0">Visão geral dos seus tanques e indicadores de água em tempo real</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('tanques.novo') }}" class="btn btn-aqua shadow-sm">
+            <i class="bi bi-plus-circle me-1"></i> Novo Tanque
+        </a>
+    </div>
+</div>
+
+<!-- Resumo dos Indicadores -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card p-3 bg-white border-start border-4 border-primary">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold">TOTAL DE TANQUES</span>
+                    <h3 class="fw-bold mb-0 mt-1">{{ dados_tanques|length }}</h3>
+                </div>
+                <div class="bg-primary-subtle text-primary p-3 rounded-circle">
+                    <i class="bi bi-grid-fill fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 bg-white border-start border-4 border-danger">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold">ALERTAS ATIVOS</span>
+                    <h3 class="fw-bold mb-0 mt-1 {{ 'text-danger' if total_alertas_ativos > 0 else 'text-success' }}">
+                        {{ total_alertas_ativos }}
+                    </h3>
+                </div>
+                <div class="bg-danger-subtle text-danger p-3 rounded-circle">
+                    <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card p-3 bg-white border-start border-4 border-info">
+            <div class="d-flex align-items-center justify-content-between">
+                <div>
+                    <span class="text-muted small fw-semibold">STATUS DO SISTEMA</span>
+                    <h4 class="fw-bold mb-0 mt-1 text-success">
+                        <i class="bi bi-check-circle-fill fs-5"></i> Operacional
+                    </h4>
+                </div>
+                <div class="bg-info-subtle text-info p-3 rounded-circle">
+                    <i class="bi bi-cpu-fill fs-4"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lista de Tanques -->
+<h4 class="fw-bold mb-3 d-flex align-items-center gap-2">
+    <i class="bi bi-water text-primary"></i> Seus Tanques
+</h4>
+
+{% if not dados_tanques %}
+    <div class="card p-5 text-center bg-white shadow-sm">
+        <div class="mb-3">
+            <i class="bi bi-inbox text-muted display-4"></i>
+        </div>
+        <h5 class="fw-bold">Nenhum tanque cadastrado</h5>
+        <p class="text-muted">Cadastre seu primeiro tanque para começar a registrar medições e receber alertas.</p>
+        <div>
+            <a href="{{ url_for('tanques.novo') }}" class="btn btn-aqua">
+                <i class="bi bi-plus-circle me-1"></i> Cadastrar Meu Primeiro Tanque
+            </a>
+        </div>
+    </div>
+{% else %}
+    <div class="row g-4 mb-4">
+        {% for item in dados_tanques %}
+            {% set t = item.tanque %}
+            {% set med = item.ultima_medicao %}
+            <div class="col-lg-6">
+                <div class="card h-100 p-4 bg-white position-relative">
+                    {% if item.alertas_ativos > 0 %}
+                        <span class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-danger shadow-sm">
+                            {{ item.alertas_ativos }} alerta(s)
+                        </span>
+                    {% endif %}
+
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            <h5 class="fw-bold mb-1">
+                                <a href="{{ url_for('tanques.detalhe', tanque_id=t.id) }}" class="text-decoration-none text-dark">
+                                    {{ t.nome }}
+                                </a>
+                            </h5>
+                            <span class="text-muted small">
+                                <i class="bi bi-geo-alt me-1"></i>{{ t.descricao_local or 'Local não informado' }}
+                            </span>
+                        </div>
+                        <a href="{{ url_for('tanques.detalhe', tanque_id=t.id) }}" class="btn btn-sm btn-outline-primary">
+                            Ver detalhes <i class="bi bi-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    {% if med %}
+                        <div class="row g-2 mb-3">
+                            <div class="col-4">
+                                <div class="p-2 rounded bg-light border text-center">
+                                    <div class="text-muted small">Oxigênio</div>
+                                    <div class="fw-bold fs-5 text-primary">{{ "%.2f"|format(med.oxigenio_dissolvido) }}</div>
+                                    <small class="text-secondary">mg/L</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 rounded bg-light border text-center">
+                                    <div class="text-muted small">pH</div>
+                                    <div class="fw-bold fs-5 text-info">{{ "%.2f"|format(med.ph) }}</div>
+                                    <small class="text-secondary">escala</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="p-2 rounded bg-light border text-center">
+                                    <div class="text-muted small">Temperatura</div>
+                                    <div class="fw-bold fs-5 text-warning">{{ "%.1f"|format(med.temperatura) }}</div>
+                                    <small class="text-secondary">°C</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between text-muted small">
+                            <span>Origem: <strong>{{ med.origem }}</strong></span>
+                            <span>Última leitura: {{ med.data_hora.strftime('%d/%m/%Y %H:%M') }}</span>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-light border text-center py-3 my-2 text-muted">
+                            <i class="bi bi-clock-history me-1"></i> Nenhuma medição registrada ainda neste tanque.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<!-- Alertas Recentes -->
+{% if alertas_ativos %}
+    <h4 class="fw-bold mb-3 d-flex align-items-center gap-2 text-danger">
+        <i class="bi bi-exclamation-triangle-fill"></i> Alertas Ativos Críticos
+    </h4>
+    <div class="card p-0 bg-white overflow-hidden shadow-sm mb-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tanque</th>
+                        <th>Parâmetro</th>
+                        <th>Valor Observado</th>
+                        <th>Limite Acionado</th>
+                        <th>Data/Hora</th>
+                        <th>Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in alertas_ativos %}
+                        <tr>
+                            <td class="fw-semibold">{{ a.tanque.nome }}</td>
+                            <td>
+                                <span class="badge bg-danger">{{ a.parametro|capitalize }}</span>
+                            </td>
+                            <td class="fw-bold text-danger">{{ a.valor_observado }}</td>
+                            <td class="text-muted">{{ a.limite_acionado }}</td>
+                            <td>{{ a.data_hora.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                            <td>
+                                <form method="POST" action="{{ url_for('alertas.resolver', alerta_id=a.id) }}" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-check2"></i> Resolver
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+
+{% endblock %}

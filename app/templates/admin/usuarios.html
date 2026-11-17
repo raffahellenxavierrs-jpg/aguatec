@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Administração de Usuários{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1 text-primary">
+            <i class="bi bi-shield-lock-fill me-2"></i>Gerenciamento de Contas
+        </h2>
+        <p class="text-muted mb-0">Painel administrativo para controle e desativação de contas de usuários</p>
+    </div>
+</div>
+
+<div class="card bg-white shadow-sm overflow-hidden">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>ID</th>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Perfil</th>
+                    <th>Tanques Cadastrados</th>
+                    <th>Data de Cadastro</th>
+                    <th>Status</th>
+                    <th>Ação Administrativa</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in usuarios %}
+                    <tr>
+                        <td>#{{ u.id }}</td>
+                        <td class="fw-semibold">{{ u.nome }}</td>
+                        <td>{{ u.email }}</td>
+                        <td>
+                            {% if u.is_admin %}
+                                <span class="badge bg-warning text-dark">Administrador</span>
+                            {% else %}
+                                <span class="badge bg-info text-white">Piscicultor</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ u.tanques|length }}</td>
+                        <td class="small">{{ u.criado_em.strftime('%d/%m/%Y %H:%M') }}</td>
+                        <td>
+                            {% if u.ativo %}
+                                <span class="badge bg-success">Ativa</span>
+                            {% else %}
+                                <span class="badge bg-danger">Desativada</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.id == current_user.id %}
+                                <span class="text-muted small">Conta atual</span>
+                            {% else %}
+                                <form method="POST" action="{{ url_for('admin.toggle_status', usuario_id=u.id) }}" class="d-inline" onsubmit="return confirm('Confirma a alteração do status desta conta?');">
+                                    {% if u.ativo %}
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-person-x me-1"></i> Desativar
+                                        </button>
+                                    {% else %}
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-person-check me-1"></i> Reativar
+                                        </button>
+                                    {% endif %}
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

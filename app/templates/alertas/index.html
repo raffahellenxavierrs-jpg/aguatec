@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Central de Alertas{% endblock %}
+
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h2 class="fw-bold mb-1">Central de Alertas</h2>
+        <p class="text-muted mb-0">Acompanhe medições fora dos parâmetros e ações corretivas</p>
+    </div>
+
+    <!-- Filtro de Status -->
+    <div class="btn-group" role="group">
+        <a href="{{ url_for('alertas.index', status='todos') }}" class="btn btn-outline-secondary {{ 'active' if status_filtro == 'todos' else '' }}">
+            Todos
+        </a>
+        <a href="{{ url_for('alertas.index', status='ativo') }}" class="btn btn-outline-danger {{ 'active' if status_filtro == 'ativo' else '' }}">
+            Ativos
+        </a>
+        <a href="{{ url_for('alertas.index', status='resolvido') }}" class="btn btn-outline-success {{ 'active' if status_filtro == 'resolvido' else '' }}">
+            Resolvidos
+        </a>
+    </div>
+</div>
+
+{% if not alertas %}
+    <div class="card p-5 text-center bg-white shadow-sm">
+        <div class="mb-3">
+            <i class="bi bi-shield-check text-success display-4"></i>
+        </div>
+        <h5 class="fw-bold">Nenhum alerta registrado com o filtro selecionado</h5>
+        <p class="text-muted mb-0">Seus tanques estão em condições normais de operação.</p>
+    </div>
+{% else %}
+    <div class="card bg-white shadow-sm overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Tanque</th>
+                        <th>Parâmetro</th>
+                        <th>Valor Medido</th>
+                        <th>Limite Disparado</th>
+                        <th>Data e Hora</th>
+                        <th>Status</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in alertas %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('tanques.detalhe', tanque_id=a.tanque_id) }}" class="fw-semibold text-decoration-none">
+                                    {{ a.tanque.nome }}
+                                </a>
+                            </td>
+                            <td>
+                                <span class="badge {{ 'bg-danger' if a.status == 'ativo' else 'bg-secondary' }}">
+                                    {{ a.parametro|capitalize }}
+                                </span>
+                            </td>
+                            <td class="fw-bold {{ 'text-danger' if a.status == 'ativo' else 'text-muted' }}">
+                                {{ a.valor_observado }}
+                            </td>
+                            <td class="text-muted">{{ a.limite_acionado }}</td>
+                            <td class="small">{{ a.data_hora.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                            <td>
+                                {% if a.status == 'ativo' %}
+                                    <span class="badge bg-danger">Ativo</span>
+                                {% else %}
+                                    <span class="badge bg-success">Resolvido</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if a.status == 'ativo' %}
+                                    <form method="POST" action="{{ url_for('alertas.resolver', alerta_id=a.id) }}" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-outline-success">
+                                            <i class="bi bi-check2"></i> Resolver
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="text-muted small">Sem pendência</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}

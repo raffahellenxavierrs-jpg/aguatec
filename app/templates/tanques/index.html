@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}Meus Tanques{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h2 class="fw-bold mb-1">Tanques Cadastrados</h2>
+        <p class="text-muted mb-0">Gerencie todos os seus tanques de piscicultura</p>
+    </div>
+    <a href="{{ url_for('tanques.novo') }}" class="btn btn-aqua shadow-sm">
+        <i class="bi bi-plus-lg me-1"></i> Cadastrar Novo Tanque
+    </a>
+</div>
+
+{% if not tanques %}
+    <div class="card p-5 text-center bg-white shadow-sm">
+        <div class="mb-3">
+            <i class="bi bi-water text-muted display-4"></i>
+        </div>
+        <h5 class="fw-bold">Nenhum tanque cadastrado</h5>
+        <p class="text-muted">Você ainda não possui tanques vinculados à sua conta.</p>
+        <div>
+            <a href="{{ url_for('tanques.novo') }}" class="btn btn-aqua">
+                <i class="bi bi-plus-circle me-1"></i> Cadastrar Tanque Agora
+            </a>
+        </div>
+    </div>
+{% else %}
+    <div class="row g-4">
+        {% for t in tanques %}
+            {% set ultima = t.ultima_medicao() %}
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 p-4 bg-white d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <h5 class="fw-bold mb-0 text-primary">{{ t.nome }}</h5>
+                            <span class="badge bg-light text-secondary border">ID: #{{ t.id }}</span>
+                        </div>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-geo-alt me-1"></i>{{ t.descricao_local or 'Sem descrição de localização' }}
+                        </p>
+
+                        {% if ultima %}
+                            <div class="bg-light p-2 rounded small mb-3">
+                                <div class="text-muted mb-1">Última leitura:</div>
+                                <div class="d-flex justify-content-between">
+                                    <span>OD: <strong>{{ "%.1f"|format(ultima.oxigenio_dissolvido) }}</strong></span>
+                                    <span>pH: <strong>{{ "%.1f"|format(ultima.ph) }}</strong></span>
+                                    <span>Temp: <strong>{{ "%.1f"|format(ultima.temperatura) }}°C</strong></span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <div class="alert alert-light border py-2 small text-muted text-center mb-3">
+                                Nenhuma leitura registrada
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2 pt-2 border-top">
+                        <a href="{{ url_for('tanques.detalhe', tanque_id=t.id) }}" class="btn btn-sm btn-aqua flex-grow-1">
+                            <i class="bi bi-speedometer2 me-1"></i> Painel do Tanque
+                        </a>
+                        <form method="POST" action="{{ url_for('tanques.excluir', tanque_id=t.id) }}" onsubmit="return confirm('Deseja realmente excluir este tanque e todos os seus dados?');">
+                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Excluir tanque">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+{% endblock %}

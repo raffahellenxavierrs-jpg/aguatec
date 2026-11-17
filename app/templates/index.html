@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Início{% endblock %}
+
+{% block content %}
+<div class="row align-items-center py-5">
+    <div class="col-lg-6 mb-4 mb-lg-0">
+        <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-3 py-2 rounded-pill fw-semibold mb-3">
+            <i class="bi bi-broadcast me-1"></i> Monitoramento IoT em Tempo Real
+        </span>
+        <h1 class="display-4 fw-bold text-dark mb-3">
+            Qualidade da água inteligente para sua piscicultura
+        </h1>
+        <p class="lead text-secondary mb-4">
+            Monitore continuamente <strong>oxigênio dissolvido</strong>, <strong>pH</strong> e <strong>temperatura</strong> dos seus tanques de peixes. Receba alertas automáticos e preserve a saúde do seu plantel.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+            <a href="{{ url_for('auth.cadastro') }}" class="btn btn-aqua btn-lg px-4 shadow">
+                <i class="bi bi-person-plus-fill me-1"></i> Criar Conta Gratuita
+            </a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-outline-secondary btn-lg px-4">
+                <i class="bi bi-box-arrow-in-right me-1"></i> Acessar Sistema
+            </a>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card shadow-lg border-0 p-4 bg-white">
+            <h5 class="fw-bold mb-3 text-primary d-flex align-items-center gap-2">
+                <i class="bi bi-cpu-fill"></i> Parâmetros Críticos Monitorados
+            </h5>
+            
+            <div class="p-3 mb-3 rounded-3 bg-light border-start border-4 border-info">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold">Oxigênio Dissolvido (OD)</h6>
+                        <small class="text-muted">Essencial para a respiração e sobrevivência dos peixes</small>
+                    </div>
+                    <span class="badge bg-info text-white">4.0 a 12.0 mg/L</span>
+                </div>
+            </div>
+
+            <div class="p-3 mb-3 rounded-3 bg-light border-start border-4 border-primary">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold">Potencial Hidrogeniônico (pH)</h6>
+                        <small class="text-muted">Equilíbrio químico e redução de toxinas na água</small>
+                    </div>
+                    <span class="badge bg-primary text-white">6.5 a 8.5</span>
+                </div>
+            </div>
+
+            <div class="p-3 rounded-3 bg-light border-start border-4 border-warning">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="mb-0 fw-bold">Temperatura (°C)</h6>
+                        <small class="text-muted">Influencia o metabolismo, apetite e crescimento</small>
+                    </div>
+                    <span class="badge bg-warning text-dark">24.0 a 32.0 °C</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

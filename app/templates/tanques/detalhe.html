@@ -1,0 +1,440 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ tanque.nome }} - Detalhes{% endblock %}
+
+{% block content %}
+<!-- Cabeçalho do Tanque -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div class="d-flex align-items-center gap-3">
+        <a href="{{ url_for('tanques.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-arrow-left"></i>
+        </a>
+        <div>
+            <div class="d-flex align-items-center gap-2">
+                <h2 class="fw-bold mb-0 text-primary">{{ tanque.nome }}</h2>
+                <span class="badge bg-light text-secondary border">Tanque ID: #{{ tanque.id }}</span>
+            </div>
+            <p class="text-muted mb-0 small">
+                <i class="bi bi-geo-alt me-1"></i>{{ tanque.descricao_local or 'Localização não especificada' }}
+            </p>
+        </div>
+    </div>
+    <div class="d-flex gap-2">
+        <button class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalManual">
+            <i class="bi bi-plus-circle me-1"></i> Inserir Medição de Teste
+        </button>
+        <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalLimites">
+            <i class="bi bi-sliders me-1"></i> Configurar Limites
+        </button>
+    </div>
+</div>
+
+<!-- Cards com Leituras Atuais -->
+<div class="row g-3 mb-4">
+    <!-- Oxigênio -->
+    <div class="col-md-4">
+        <div class="card p-3 bg-white param-card param-oxigenio h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold text-muted small">OXIGÊNIO DISSOLVIDO (OD)</span>
+                <i class="bi bi-droplet-half text-primary fs-5"></i>
+            </div>
+            <div class="d-flex align-items-baseline gap-2">
+                {% if ultima_medicao %}
+                    <h2 class="fw-bold text-primary mb-0">{{ "%.2f"|format(ultima_medicao.oxigenio_dissolvido) }}</h2>
+                    <span class="text-muted fw-semibold">mg/L</span>
+                {% else %}
+                    <h4 class="text-muted mb-0">--</h4>
+                {% endif %}
+            </div>
+            <div class="text-muted small mt-2">
+                {% for lim in limites if lim.parametro == 'oxigenio' %}
+                    Faixa ideal: <strong>{{ lim.valor_minimo or 0 }} a {{ lim.valor_maximo or '-' }} mg/L</strong>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- pH -->
+    <div class="col-md-4">
+        <div class="card p-3 bg-white param-card param-ph h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold text-muted small">POTENCIAL HIDROGENIÔNICO (pH)</span>
+                <i class="bi bi-activity text-purple fs-5"></i>
+            </div>
+            <div class="d-flex align-items-baseline gap-2">
+                {% if ultima_medicao %}
+                    <h2 class="fw-bold text-purple mb-0" style="color: #8b5cf6;">{{ "%.2f"|format(ultima_medicao.ph) }}</h2>
+                    <span class="text-muted fw-semibold">escala</span>
+                {% else %}
+                    <h4 class="text-muted mb-0">--</h4>
+                {% endif %}
+            </div>
+            <div class="text-muted small mt-2">
+                {% for lim in limites if lim.parametro == 'ph' %}
+                    Faixa ideal: <strong>{{ lim.valor_minimo or '-' }} a {{ lim.valor_maximo or '-' }}</strong>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Temperatura -->
+    <div class="col-md-4">
+        <div class="card p-3 bg-white param-card param-temperatura h-100">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="fw-semibold text-muted small">TEMPERATURA</span>
+                <i class="bi bi-thermometer-half text-warning fs-5"></i>
+            </div>
+            <div class="d-flex align-items-baseline gap-2">
+                {% if ultima_medicao %}
+                    <h2 class="fw-bold text-warning mb-0">{{ "%.1f"|format(ultima_medicao.temperatura) }}</h2>
+                    <span class="text-muted fw-semibold">°C</span>
+                {% else %}
+                    <h4 class="text-muted mb-0">--</h4>
+                {% endif %}
+            </div>
+            <div class="text-muted small mt-2">
+                {% for lim in limites if lim.parametro == 'temperatura' %}
+                    Faixa ideal: <strong>{{ lim.valor_minimo or '-' }}°C a {{ lim.valor_maximo or '-' }}°C</strong>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráfico de Monitoramento -->
+<div class="card p-4 bg-white shadow-sm mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">
+            <i class="bi bi-graph-up text-primary me-2"></i>Histórico Temporal das Medições
+        </h5>
+        <span class="badge bg-light text-muted border">Últimas {{ medicoes|length }} amostras</span>
+    </div>
+    {% if medicoes %}
+        <div style="position: relative; height: 320px; width: 100%;">
+            <canvas id="graficoMedicoes"></canvas>
+        </div>
+    {% else %}
+        <div class="alert alert-light border py-4 text-center text-muted mb-0">
+            Ainda não há dados suficientes para exibir o gráfico. Adicione uma medição de teste ou conecte seu ESP32!
+        </div>
+    {% endif %}
+</div>
+
+<!-- Abas de Histórico e Alertas -->
+<div class="card p-4 bg-white shadow-sm">
+    <ul class="nav nav-tabs mb-3" id="tanqueTab" role="tablist">
+        <li class="nav-item">
+            <button class="nav-link active fw-semibold" id="historico-tab" data-bs-toggle="tab" data-bs-target="#historico" type="button">
+                <i class="bi bi-list-check me-1"></i> Histórico de Leituras ({{ medicoes|length }})
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-semibold" id="alertas-tab" data-bs-toggle="tab" data-bs-target="#alertas" type="button">
+                <i class="bi bi-exclamation-triangle me-1"></i> Alertas Deste Tanque ({{ alertas|length }})
+            </button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link fw-semibold" id="iot-tab" data-bs-toggle="tab" data-bs-target="#iot" type="button">
+                <i class="bi bi-code-slash me-1"></i> Integração IoT / API
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="tanqueTabContent">
+        <!-- Tabela de Histórico -->
+        <div class="tab-pane fade show active" id="historico" role="tabpanel">
+            {% if medicoes %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data / Hora</th>
+                                <th>Oxigênio (mg/L)</th>
+                                <th>pH</th>
+                                <th>Temperatura (°C)</th>
+                                <th>Origem</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for m in medicoes %}
+                                <tr>
+                                    <td>{{ m.data_hora.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                                    <td class="fw-semibold text-primary">{{ "%.2f"|format(m.oxigenio_dissolvido) }}</td>
+                                    <td class="fw-semibold text-purple">{{ "%.2f"|format(m.ph) }}</td>
+                                    <td class="fw-semibold text-warning">{{ "%.1f"|format(m.temperatura) }}</td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">{{ m.origem }}</span>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-inbox fs-2"></i>
+                    <p class="mt-2 mb-0">Nenhuma medição registrada até o momento.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Tabela de Alertas -->
+        <div class="tab-pane fade" id="alertas" role="tabpanel">
+            {% if alertas %}
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Data / Hora</th>
+                                <th>Parâmetro</th>
+                                <th>Valor Observado</th>
+                                <th>Limite Acionado</th>
+                                <th>Status</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for a in alertas %}
+                                <tr>
+                                    <td>{{ a.data_hora.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                                    <td>
+                                        <span class="badge bg-danger">{{ a.parametro|capitalize }}</span>
+                                    </td>
+                                    <td class="fw-bold text-danger">{{ a.valor_observado }}</td>
+                                    <td class="text-muted">{{ a.limite_acionado }}</td>
+                                    <td>
+                                        {% if a.status == 'ativo' %}
+                                            <span class="badge bg-danger">Ativo</span>
+                                        {% else %}
+                                            <span class="badge bg-success">Resolvido</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if a.status == 'ativo' %}
+                                            <form method="POST" action="{{ url_for('alertas.resolver', alerta_id=a.id) }}" class="d-inline">
+                                                <button type="submit" class="btn btn-sm btn-outline-success">
+                                                    <i class="bi bi-check2"></i> Resolver
+                                                </button>
+                                            </form>
+                                        {% else %}
+                                            <span class="text-muted small">Concluído</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4 text-muted">
+                    <i class="bi bi-shield-check text-success fs-2"></i>
+                    <p class="mt-2 mb-0">Nenhum alerta gerado para este tanque! Todos os parâmetros estão normais.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Integração IoT -->
+        <div class="tab-pane fade" id="iot" role="tabpanel">
+            <div class="p-3 bg-light rounded-3">
+                <h6 class="fw-bold mb-2">Como enviar medições do ESP32 ou Script HTTP:</h6>
+                <p class="small text-muted mb-3">
+                    Faça uma requisição <code>POST</code> para o endpoint abaixo passando os dados no corpo em formato JSON:
+                </p>
+                <div class="bg-dark text-light p-3 rounded mb-3 small font-monospace">
+POST /api/medicoes<br>
+Content-Type: application/json<br>
+<br>
+{<br>
+&nbsp;&nbsp;"tanque_id": {{ tanque.id }},<br>
+&nbsp;&nbsp;"oxigenio_dissolvido": 6.5,<br>
+&nbsp;&nbsp;"ph": 7.2,<br>
+&nbsp;&nbsp;"temperatura": 27.5,<br>
+&nbsp;&nbsp;"origem": "esp32"<br>
+}
+                </div>
+                <p class="small text-muted mb-0">
+                    O sistema irá salvar o registro e avaliar os limites automaticamente em segundo plano.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Inserir Medição de Teste (Manual) -->
+<div class="modal fade" id="modalManual" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('medicoes.inserir_medicao_manual', tanque_id=tanque.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Inserir Medição Manual para Teste</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="oxigenio" class="form-label fw-semibold">Oxigênio Dissolvido (mg/L)</label>
+                        <input type="number" step="0.01" class="form-control" id="oxigenio" name="oxigenio" placeholder="Ex.: 6.5" required>
+                        <div class="form-text">Abaixo de 4.0 mg/L geralmente gera alerta.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="ph" class="form-label fw-semibold">pH da Água</label>
+                        <input type="number" step="0.01" class="form-control" id="ph" name="ph" placeholder="Ex.: 7.2" required>
+                        <div class="form-text">Faixa ideal: 6.5 a 8.5.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="temperatura" class="form-label fw-semibold">Temperatura (°C)</label>
+                        <input type="number" step="0.1" class="form-control" id="temperatura" name="temperatura" placeholder="Ex.: 28.0" required>
+                        <div class="form-text">Faixa ideal: 24.0°C a 32.0°C.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-aqua">Registrar Medição</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Configuração de Limites de Alerta -->
+<div class="modal fade" id="modalLimites" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('tanques.atualizar_limites', tanque_id=tanque.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Configurar Limites de Alerta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small">
+                        Defina as faixas de operação segura para este tanque. Medições fora desses valores dispararão alertas imediatos.
+                    </p>
+
+                    {% set ox_lim = (limites|selectattr('parametro', 'equalto', 'oxigenio')|first) %}
+                    {% set ph_lim = (limites|selectattr('parametro', 'equalto', 'ph')|first) %}
+                    {% set temp_lim = (limites|selectattr('parametro', 'equalto', 'temperatura')|first) %}
+
+                    <!-- Oxigênio -->
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <label class="form-label fw-bold text-primary mb-1">Oxigênio Dissolvido (mg/L)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small text-muted">Mínimo</label>
+                                <input type="number" step="0.1" class="form-control form-control-sm" name="oxigenio_min" value="{{ ox_lim.valor_minimo if ox_lim else 4.0 }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="small text-muted">Máximo</label>
+                                <input type="number" step="0.1" class="form-control form-control-sm" name="oxigenio_max" value="{{ ox_lim.valor_maximo if ox_lim else 12.0 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- pH -->
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <label class="form-label fw-bold text-purple mb-1">pH da Água</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small text-muted">Mínimo</label>
+                                <input type="number" step="0.1" class="form-control form-control-sm" name="ph_min" value="{{ ph_lim.valor_minimo if ph_lim else 6.5 }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="small text-muted">Máximo</label>
+                                <input type="number" step="0.1" class="form-control form-control-sm" name="ph_max" value="{{ ph_lim.valor_maximo if ph_lim else 8.5 }}">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Temperatura -->
+                    <div class="mb-3 p-3 bg-light rounded">
+                        <label class="form-label fw-bold text-warning mb-1">Temperatura (°C)</label>
+                        <div class="row g-2">
+                            <div class="col-6">
+                                <label class="small text-muted">Mínimo</label>
+                                <input type="number" step="0.1" class="form-control form-control-sm" name="temperatura_min" value="{{ temp_lim.valor_minimo if temp_lim else 24.0 }}">
+                            </div>
+                            <div class="col-6">
+                                <label class="small text-muted">Máximo</label>
+                                <input type="number" step="0.1" class="form-control form-control-sm" name="temperatura_max" value="{{ temp_lim.valor_maximo if temp_lim else 32.0 }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="submit" class="btn btn-aqua">Salvar Limites</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if medicoes %}
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Obter dados das medições invertidos para ordem cronológica ascendente
+        const rotulos = [{% for m in medicoes|reverse %}'{{ m.data_hora.strftime("%H:%M") }}',{% endfor %}];
+        const dadosOxigenio = [{% for m in medicoes|reverse %}{{ m.oxigenio_dissolvido }},{% endfor %}];
+        const dadosPh = [{% for m in medicoes|reverse %}{{ m.ph }},{% endfor %}];
+        const dadosTemperatura = [{% for m in medicoes|reverse %}{{ m.temperatura }},{% endfor %}];
+
+        const ctx = document.getElementById('graficoMedicoes').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: rotulos,
+                datasets: [
+                    {
+                        label: 'Oxigênio Dissolvido (mg/L)',
+                        data: dadosOxigenio,
+                        borderColor: '#0284c7',
+                        backgroundColor: 'rgba(2, 132, 199, 0.1)',
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'pH',
+                        data: dadosPh,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                        tension: 0.3,
+                        yAxisID: 'y'
+                    },
+                    {
+                        label: 'Temperatura (°C)',
+                        data: dadosTemperatura,
+                        borderColor: '#f97316',
+                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                        tension: 0.3,
+                        yAxisID: 'y1'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: { display: true, text: 'Oxigênio (mg/L) & pH' }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        title: { display: true, text: 'Temperatura (°C)' }
+                    }
+                }
+            }
+        });
+    });
+</script>
+{% endif %}
+{% endblock %}

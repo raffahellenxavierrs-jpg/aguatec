@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+
+{% block title %}Novo Tanque{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-md-7 col-lg-6">
+        <div class="card p-4 p-md-5 bg-white">
+            <div class="d-flex align-items-center gap-3 mb-4">
+                <a href="{{ url_for('tanques.index') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left"></i>
+                </a>
+                <div>
+                    <h3 class="fw-bold mb-0">Cadastrar Novo Tanque</h3>
+                    <p class="text-muted small mb-0">Informe os dados de identificação do tanque de criação</p>
+                </div>
+            </div>
+
+            <form method="POST" action="{{ url_for('tanques.novo') }}">
+                <div class="mb-3">
+                    <label for="nome" class="form-label fw-semibold">Nome ou Identificador do Tanque *</label>
+                    <input type="text" class="form-control" id="nome" name="nome" value="{{ nome or '' }}" placeholder="Ex.: Tanque 01 - Berçário de Tambaqui" required autofocus>
+                    <div class="form-text">Um nome claro para você identificar facilmente no sistema.</div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="descricao_local" class="form-label fw-semibold">Localização ou Descrição</label>
+                    <textarea class="form-control" id="descricao_local" name="descricao_local" rows="3" placeholder="Ex.: Setor Norte da propriedade, próximo ao barracão principal">{{ descricao_local or '' }}</textarea>
+                </div>
+
+                <div class="alert alert-info small d-flex gap-2">
+                    <i class="bi bi-info-circle-fill fs-5"></i>
+                    <div>
+                        Ao cadastrar o tanque, o sistema configurará automaticamente os <strong>limites ideais recomendados</strong> para piscicultura (Oxigênio &ge; 4.0 mg/L, pH entre 6.5 e 8.5, Temperatura entre 24°C e 32°C). Você poderá ajustá-los quando quiser.
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="{{ url_for('tanques.index') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-aqua px-4">
+                        <i class="bi bi-check-circle me-1"></i> Salvar Tanque
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
